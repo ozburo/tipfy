@@ -50,7 +50,7 @@ class MemcachedCount(object):
 			namespace=self.namespace)
 
 	def delete_count(self):
-		memcache.delete(self.key)
+		memcache.delete(self.key, namespace=self.namespace)
 
 	count = property(get_count, set_count, delete_count)
 
