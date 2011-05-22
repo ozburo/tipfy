@@ -105,7 +105,11 @@ class Counter(object):
 
 	@property
 	def number_of_shards(self):
-		return self.shards or get_request().app.config[__name__]['shards']
+		try:
+			return self.shards or get_request().app.config[__name__]['shards']
+		except AttributeError:
+			from config import config
+			return config[__name__]['shards']
 
 	def delete(self):
 		q = db.Query(CounterShard).filter('name =', self.name)
