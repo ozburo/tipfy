@@ -129,7 +129,7 @@ class Counter(object):
 
 	def get_count(self, nocache=False):
 		total = self.memcached.count
-		if nocache or total is None:
+		if nocache or total is 0:
 			return self.get_count_and_cache()
 		else:
 			return int(total)
