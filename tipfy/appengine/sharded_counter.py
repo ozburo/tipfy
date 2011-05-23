@@ -115,6 +115,9 @@ class Counter(object):
 		q = db.Query(CounterShard).filter('name =', self.name)
 		shards = q.fetch(limit=self.number_of_shards)
 		db.delete(shards)
+
+	def destroy(self):
+		self.delete()
 		self.memcached.delete_count()
 		self.delayed_incr.delete_count()
 
