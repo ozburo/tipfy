@@ -34,7 +34,6 @@ class MemcachedCount(object):
 	def __init__(self, name):
 		self.key = 'MemcachedCount' + name
 		self.key = 'MemcachedCount' + name
-		logging.error(self.key)
 
 	def get_count(self):
 		value = memcache.get(self.key)
