@@ -31,37 +31,34 @@ class MemcachedCount(object):
 	# Allows negative numbers in unsigned memcache
 	DELTA_ZERO = 500000
 
-	@property
-	def namespace(self):
-		return __name__ + '.' + self.__class__.__name__
-
 	def __init__(self, name):
 		self.key = 'MemcachedCount' + name
+		self.key = 'MemcachedCount' + name
+		logging.error(self.key)
 
 	def get_count(self):
-		value = memcache.get(self.key, namespace=self.namespace)
+		value = memcache.get(self.key)
 		if value is None:
 			return 0
 		else:
 			return string.atoi(value) - MemcachedCount.DELTA_ZERO
 
 	def set_count(self, value):
-		memcache.set(self.key, str(MemcachedCount.DELTA_ZERO + value),
-			namespace=self.namespace)
+		memcache.set(self.key, str(MemcachedCount.DELTA_ZERO + value))
 
 	def delete_count(self):
-		memcache.delete(self.key, namespace=self.namespace)
+		memcache.delete(self.key)
 
 	count = property(get_count, set_count, delete_count)
 
 	def increment(self, incr=1):
-		value = memcache.get(self.key, namespace=self.namespace)
+		value = memcache.get(self.key)
 		if value is None:
 			self.count = incr
 		elif incr > 0:
-			memcache.incr(self.key, incr, namespace=self.namespace)
+			memcache.incr(self.key, incr)
 		elif incr < 0:
-			memcache.decr(self.key, -incr, namespace=self.namespace)
+			memcache.decr(self.key, -incr)
 
 
 class Counter(object):
@@ -105,19 +102,13 @@ class Counter(object):
 
 	@property
 	def number_of_shards(self):
-		try:
-			return self.shards or get_request().app.config[__name__]['shards']
-		except AttributeError:
-			from config import config
-			return config[__name__]['shards']
+		return self.shards or get_request().app.config[__name__]['shards']
 
 	def delete(self):
 		q = db.Query(CounterShard).filter('name =', self.name)
 		shards = q.fetch(limit=self.number_of_shards)
 		db.delete(shards)
 
-	def destroy(self):
-		self.delete()
 		self.memcached.delete_count()
 		self.delayed_incr.delete_count()
 
