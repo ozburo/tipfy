@@ -94,6 +94,9 @@ class Counter(object):
 	#: Number of shards to use.
 	shards = None
 
+	#: Model entity for the counter shards.
+	shards_model = None
+
 	def __init__(self, name):
 		self.name = name
 		self.memcached = MemcachedCount('counter:' + name)
@@ -103,8 +106,12 @@ class Counter(object):
 	def number_of_shards(self):
 		return self.shards or get_request().app.config[__name__]['shards']
 
+	@property
+	def counter_shards(self):
+		return self.shards_model or CounterShard
+
 	def delete(self):
-		q = db.Query(CounterShard).filter('name =', self.name)
+		q = db.Query(self.counter_shards).filter('name =', self.name)
 		shards = q.fetch(limit=self.number_of_shards)
 		db.delete(shards)
 
@@ -112,7 +119,7 @@ class Counter(object):
 		self.delayed_incr.delete_count()
 
 	def get_count_and_cache(self):
-		q = db.Query(CounterShard).filter('name =', self.name)
+		q = db.Query(self.counter_shards).filter('name =', self.name)
 		shards = q.fetch(limit=self.number_of_shards)
 		datastore_count = 0
 		for shard in shards:
@@ -134,12 +141,12 @@ class Counter(object):
 		self.memcached.count = value
 		delta = value - cur_value
 		if delta != 0:
-			CounterShard.increment(self, incr=delta)
+			self.counter_shards.increment(self, incr=delta)
 
 	count = property(get_count, set_count)
 
 	def increment(self, incr=1, refresh=False):
-		CounterShard.increment(self, incr)
+		self.counter_shards.increment(self, incr)
 		self.memcached.increment(incr)
 
 
@@ -154,9 +161,9 @@ class CounterShard(db.Model):
 		delayed_incr = counter.delayed_incr.count
 		shard_key_name = 'Shard' + counter_name + str(index)
 		def get_or_create_shard():
-			shard = CounterShard.get_by_key_name(shard_key_name)
+			shard = cls.get_by_key_name(shard_key_name)
 			if shard is None:
-				shard = CounterShard(key_name=shard_key_name, name=counter_name)
+				shard = cls(key_name=shard_key_name, name=counter_name)
 			shard.count += incr + delayed_incr
 			key = shard.put()
 
@@ -164,8 +171,8 @@ class CounterShard(db.Model):
 			db.run_in_transaction(get_or_create_shard)
 		except (db.Error, apiproxy_errors.Error), e:
 			counter.delayed_incr.increment(incr)
-			logging.error('CounterShard (%s) delayed increment %d: %s',
-						  counter_name, incr, e)
+			logging.error('CounterShard "%s" (%s) delayed increment %d: %s',
+						  cls.__name__, counter_name, incr, e)
 			return False
 
 		if delayed_incr:
