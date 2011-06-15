@@ -77,8 +77,7 @@ class Recaptcha(object):
 
     def _validate_recaptcha(self, challenge, response, remote_addr):
         """Performs the actual validation."""
-        private_key = current_handler.get_config('tipfyext.wtforms',
-            'recaptcha_private_key')
+        private_key = current_handler.app.config['tipfyext.wtforms']['recaptcha_private_key']
         result = urlfetch.fetch(url=RECAPTCHA_VERIFY_SERVER,
             method=urlfetch.POST,
             headers={'Content-Type': 'application/x-www-form-urlencoded'},
