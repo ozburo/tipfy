@@ -34,7 +34,7 @@ RECAPTCHA_HTML = u'''
 class RecaptchaWidget(object):
     def __call__(self, field, error=None, **kwargs):
         """Returns the recaptcha input HTML."""
-        config = current_handler.get_config('tipfyext.wtforms')
+        config = current_handler.app.config['tipfyext.wtforms']
         if config.get('recaptcha_use_ssl'):
             server = RECAPTCHA_SSL_API_SERVER
         else:
