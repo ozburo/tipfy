@@ -90,8 +90,7 @@ class Form(BaseForm):
         token_list = self._get_session().setdefault('_csrf_token', [])
         token_list.append(token)
         # Store a maximum number of tokens.
-        maximum_tokens = current_handler.get_config('tipfyext.wtforms',
-            'csrf_tokens')
+        maximum_tokens = current_handler.app.config['tipfyext.wtforms']['csrf_tokens']
         while len(token_list) > maximum_tokens:
             token_list.pop(0)
 
